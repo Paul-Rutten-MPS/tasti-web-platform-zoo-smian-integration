@@ -18,7 +18,7 @@ if __name__ == "__main__":
     Uiformio("ml_interface", window_title="GenerativeZoo Models Interface")
 
 # API Endpoints
-BASE_API_URL = "http://192.168.2.13:8012"
+BASE_API_URL = ""
 VAE_TRAIN_API_URL = f"{BASE_API_URL}/vanillavae_train"
 VAE_SAMPLE_API_URL = f"{BASE_API_URL}/vanillavae_sample"
 DDPM_TRAIN_API_URL = f"{BASE_API_URL}/DDPMs_train"
