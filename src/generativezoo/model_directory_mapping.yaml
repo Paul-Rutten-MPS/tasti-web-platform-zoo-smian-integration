@@ -1,0 +1,24 @@
+models:
+  Vanilla VAE: VanillaVAE
+  Conditional VAE: ConditionalVAE
+  Hierarchical VAE (WIP): HierarchicalVAE
+  Adversarial VAE: AdversarialVAE
+  Vanilla GAN: VanillaGAN
+  Conditional GAN: ConditionalGAN
+  CycleGAN: CycleGAN
+  Prescribed GAN: PrescribedGAN
+  Wasserstein GAN with Gradient Penalty: WassersteinGAN
+  Vanilla DDPM: VanillaDDPM
+  Conditional DDPM: ConditionalDDPM
+  Vanilla SGM: VanillaSGM
+  NCSNv2: NCSNv2
+  VQ-VAE + Transformer: VQVAE_Transformer
+  VQ-GAN + Transformer: VQGAN_Transformer
+  PixelCNN: PixelCNN
+  Vanilla Flow: VanillaFlow
+  RealNVP: RealNVP
+  Glow: Glow
+  Flow++: FlowPP
+  Flow Matching: FlowMatching
+  Conditional Flow Matching: CondFlowMatching
+  Rectified Flows: RectifiedFlows
