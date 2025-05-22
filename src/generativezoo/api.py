@@ -43,35 +43,15 @@ import tempfile
 import yaml
 
 app = FastAPI()
-# CORS ayarları
-origins = ['http://localhost:3000', 'https://localhost:3000',
-           'http://localhost:3001', 'https://localhost:3001',
-           'http://localhost', 'https://localhost',
-           'http://192.168.2.175', 'https://192.168.2.175',
-           'http://192.168.2.172', 'https://192.168.2.172',
-           'http://192.168.2.219:3000', 'https://192.168.2.219:3000',
-           'http://192.168.2.219:3001', 'https://192.168.2.219:3001',
-           "http://192.168.2.19", "https://192.168.2.19",
-           "http://192.168.2.19:3001", "https://192.168.2.19:3001",
-           "http://192.168.2.222", "https://192.168.2.222",
-           "http://192.168.2.222:3000", "https://192.168.2.222:3000",
-           "http://192.168.192.219:3000", "https://192.168.192.219:3000",
-           "http://192.168.192.219", "https://192.168.192.219",
-           "http://192.168.192.222:3000", "https://192.168.192.222:3000",
-           "http://192.168.192.222", "https://192.168.192.222",
-           "http://192.168.192.104:3000", "https://192.168.192.104:3000",
-           "http://192.168.192.104", "https://192.168.192.104",
-           "http://192.168.2.104:3000", "https://192.168.2.104:3000",
-           "http://192.168.2.104", "https://192.168.2.104",
-           "http://192.168.2.135", "https://192.168.2.135",
-           "http://192.168.2.13", "https://192.168.2.13"]
+
+
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,  # İzin verilen kökenler
-    allow_credentials=True,  # Kimlik bilgilerine izin ver
-    allow_methods=["*"],  # Tüm HTTP metodlarına izin ver
-    allow_headers=["*"],  # Tüm başlıklara izin ver
+    allow_origins=["*"],  
+    allow_credentials=True,  
+    allow_methods=["*"],  
+    allow_headers=["*"],  
 )
 
 
@@ -150,7 +130,7 @@ async def train_model(request: dict):  # Raw JSON data is received
 @app.post("/sgm_sample")
 async def sample_model(request: dict):
     try:
-        # Pydantic doğrulama ve model seçimi
+        
         if request["model_name"] == "Vanilla SGM":
             try:
                 validated_request = VanillaSGMRequestSample(**request)
@@ -238,7 +218,7 @@ async def sample_model(request: dict):
             detail=f"An error occurred during sampling: {str(e)}"
         )
 @app.post("/vanillavae_train")
-async def train_model(request: dict):  # Raw JSON data is received
+async def train_model(request: dict):  
     device = "cuda" if torch.cuda.is_available() else "cpu"
     logger.info(f"Selected device: {device}")
 
@@ -294,7 +274,7 @@ async def train_model(request: dict):  # Raw JSON data is received
             dataloader, img_size, channels = pick_dataset(validated_request.dataset, size=None, batch_size=validated_request.batch_size, num_workers=validated_request.num_workers)
             logger.info("Dataset successfully loaded.")
             model = ConditionalVAE(input_shape=img_size, input_channels=channels, args=validated_request)
-            # train model
+            
             model.train_model(dataloader, validated_request.n_epochs)
 
             logger.info("ConditionalVAE training is starting.")
@@ -315,7 +295,7 @@ async def train_model(request: dict):  # Raw JSON data is received
 @app.post("/vanillavae_sample")
 async def sample_model(request: dict):
     try:
-        # Pydantic doğrulama ve model seçimi
+        
         if request["model_name"] == "Vanilla VAE":
             try:
                 validated_request = VanillaVAERequestSample(**request)
@@ -420,7 +400,7 @@ async def sample_model(request: dict):
         )
 
 @app.post("/DDPMs_train")
-async def train_model(request: dict):  # Raw JSON data is received
+async def train_model(request: dict):  
     device = "cuda" if torch.cuda.is_available() else "cpu"
     logger.info(f"Selected device: {device}")
 
@@ -519,7 +499,7 @@ async def sample_model(request: dict):
 
             # Sampling process
             logger.info(f"Generating {validated_request.num_samples} samples.")
-            print("check control flag 1:")
+           
             base64_image = model.sample(guide_w=validated_request.guide_w)
 
             if not base64_image:
@@ -594,7 +574,7 @@ async def sample_model(request: dict):
             detail=f"An error occurred during sampling: {str(e)}"
         )
 @app.post("/Autoregressive_train")
-async def train_model(request: dict):  # Raw JSON data is received
+async def train_model(request: dict):  
     device = "cuda" if torch.cuda.is_available() else "cpu"
     logger.info(f"Selected device: {device}")
 
@@ -671,7 +651,7 @@ async def train_model(request: dict):  # Raw JSON data is received
 async def sample_model(request: dict):
     try:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        # Pydantic doğrulama ve model seçimi
+      
         if request["model_name"] == "PixelCNN":
             try:
                 validated_request = PixelCNNTrain(**request)
@@ -688,18 +668,7 @@ async def sample_model(request: dict):
             logger.info("Checkpoint successfully loaded.")
 
             base64_image = model.sample((16,channels,img_size,img_size), train=False)
-            
-            # checkpoint = f"/home/a30/Desktop/zoo/models/ConditionalDDPM/CondDDPM_{validated_request.dataset}.pt"
-            # print("check control flag 0:", checkpoint)
-            # model.denoising_model.load_state_dict(torch.load(checkpoint))
-            
-            # logger.info("Checkpoint successfully loaded.")
-
-            # # Sampling process
-            # logger.info(f"Generating {validated_request.num_samples} samples.")
-            # print("check control flag 1:")
-            # base64_image = model.sample(guide_w=validated_request.guide_w)
-
+        
             if not base64_image:
                 raise ValueError("Sampling process failed. No Base64 image generated.")
 
@@ -925,7 +894,6 @@ async def sample_model(request: dict):
             
             logger.info("Checkpoint successfully loaded.")
 
-            # Sampling process
             logger.info(f"Generating {validated_request.num_samples} samples.")
             print("check control flag 1:")
             base64_image = model.create_grid()
@@ -956,13 +924,11 @@ async def sample_model(request: dict):
             _, input_size, channels = pick_dataset(dataset_name = validated_request.dataset, batch_size=1, normalize=True, size=None)
             model = Generator(latent_dim = validated_request.latent_dim, channels = channels, d=validated_request.d, imgSize=input_size).to(device)
 
-            # Checkpoint'i yükle
+            
             checkpoint = torch.load(checkpoint_path, map_location="cpu")
 
-            # Anahtarları düzelt (generator. prefix'ini kaldır)
             new_state_dict = {key.replace("generator.", ""): value for key, value in checkpoint.items()}
 
-            # Güncellenmiş state_dict ile yükleme
             model.load_state_dict(new_state_dict, strict=False)
             model.eval()
 
@@ -986,7 +952,6 @@ async def sample_model(request: dict):
 
             checkpoint = f"/home/a30/Desktop/zoo/models/ConditionalGAN/CondGAN_{validated_request.dataset}.pt"
             
-            # Dataset bilgilerini al
             _, input_size, channels = pick_dataset(
                 dataset_name=validated_request.dataset,
                 batch_size=1,
@@ -994,21 +959,20 @@ async def sample_model(request: dict):
                 size=None
             )
 
-            # Modeli oluştur
+          
             model = Generator(
                 latent_dim=validated_request.latent_dim,
                 channels=channels,
                 d=validated_request.d
             ).to(device)
 
-            # Checkpoint'i yükle
             try:
                 checkpoint_data = torch.load(checkpoint, map_location="cpu")
 
-                # Anahtar uyumsuzluklarını düzelt
+          
                 new_state_dict = {}
                 for key, value in checkpoint_data.items():
-                    new_key = key.replace("generator.", "")  # "generator." prefix'ini kaldır
+                    new_key = key.replace("generator.", "")  
                     new_state_dict[new_key] = value
 
                 model.load_state_dict(new_state_dict, strict=False)
@@ -1421,79 +1385,48 @@ with open(yaml_path, "r") as f:
 @app.post("/ModelDownload")
 async def download_model_zip(request: dict):
     """
-    Belirtilen model ve veri setine göre modeli ZIP formatında indirir.
+    Downloads the specified model's files as a ZIP archive based on the model name and dataset.
 
-    Parametreler:
-    - Model: Modelin tam ismi (örneğin: 'PixelCNN')
-    - Dataset: Veri seti ismi (örneğin: 'mnist')
+    Request body:
+    {
+        "Model": "PixelCNN",
+        "Dataset": "mnist"
+    }
 
-    Dönüş:
-    - Başarı durumunda ZIP dosyasını indirir.
-    - Model veya dosya bulunamazsa hata döner.
+    Returns:
+        - ZIP file if model and dataset match is found.
+        - 404 error if the model, folder, or matching dataset files are not found.
     """
-    print("Model:", request["Model"])
-    print("Dataset:", request["Dataset"])
-    Model = request["Model"]
-    Dataset = request["Dataset"]
-    print("Dataset:", Dataset)
-    # Model ismine karşılık gelen klasörü YAML'dan bul
-    folder_name = model_mapping.get(Model)
-    if not folder_name:
-        raise HTTPException(status_code=404, detail=f"Model '{Model}' için klasör eşleşmesi bulunamadı.")
+    model_name = request.get("Model")
+    dataset_name = request.get("Dataset")
 
-    # Klasör yolunu oluştur
+    if not model_name or not dataset_name:
+        raise HTTPException(status_code=400, detail="Both 'Model' and 'Dataset' must be provided.")
+
+    print(f"Requested Model: {model_name}")
+    print(f"Requested Dataset: {dataset_name}")
+
+    folder_name = model_mapping.get(model_name)
+    if not folder_name:
+        raise HTTPException(status_code=404, detail=f"No folder mapping found for model '{model_name}'.")
+
     model_path = os.path.join(MODEL_DIR, folder_name)
     if not os.path.isdir(model_path):
-        raise HTTPException(status_code=404, detail=f"Model klasörü '{folder_name}' bulunamadı.")
+        raise HTTPException(status_code=404, detail=f"Model folder '{folder_name}' not found.")
 
-    # Veri setine uygun dosyaları listele
-    model_files = [f for f in os.listdir(model_path) if f.endswith(".pt") and Dataset in f]
+    matched_files = [f for f in os.listdir(model_path) if f.endswith(".pt") and dataset_name in f]
+    if not matched_files:
+        raise HTTPException(status_code=404, detail=f"No model files found for dataset '{dataset_name}' in model '{model_name}'.")
 
-    if not model_files:
-        raise HTTPException(status_code=404, detail=f"'{Dataset}' veri seti için '{Model}' modeli bulunamadı.")
-
-    # Geçici bir ZIP dosyası oluştur
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".zip") as temp_zip:
-        zip_path = temp_zip.name
-
-    # ZIP dosyasına ilgili dosyaları ekle
     with tempfile.TemporaryDirectory() as temp_dir:
-        for file in model_files:
-            shutil.copy2(os.path.join(model_path, file), os.path.join(temp_dir, file))
-        shutil.make_archive(zip_path.replace(".zip", ""), 'zip', temp_dir)  # ZIP oluştur
+        for filename in matched_files:
+            shutil.copy2(os.path.join(model_path, filename), os.path.join(temp_dir, filename))
+        zip_base = tempfile.mktemp()
+        shutil.make_archive(zip_base, 'zip', temp_dir)
+        zip_file_path = f"{zip_base}.zip"
 
-    # ZIP dosyasını kullanıcıya döndür
-    return FileResponse(zip_path, filename=f"{Model}_{Dataset}.zip", media_type="application/zip")
-
-# @app.post("/outlier_detection")
-# async def outlier_detection(request: VanillaSGMRequest):
-#     try:
-#         logger.info(f"Dataset yükleniyor: {request.dataset}")
-#         dataloader_a, input_size_a, channels_a = pick_dataset(
-#             request.dataset,
-#             'val',
-#             request.batch_size,
-#             normalize=True,
-#             size=None
-#         )
-#         logger.info(f"Outlier dataset yükleniyor: {request.out_dataset}")
-#         dataloader_b, input_size_b, channels_b = pick_dataset(
-#             request.out_dataset,
-#             'val',
-#             request.batch_size,
-#             normalize=True,
-#             size=input_size_a
-#         )
-#         logger.info("Datasetler başarıyla yüklendi.")
-
-#         model = VanillaSGM(request, channels_a, input_size_a)
-#         model.model.load_state_dict(torch.load(request.checkpoint))
-#         logger.info("Checkpoint başarıyla yüklendi.")
-
-#         results = model.outlier_detection(dataloader_a, dataloader_b)
-#         logger.info("Outlier detection tamamlandı.")
-
-#         return {"status": "success", "message": "Outlier detection tamamlandı!", "results": results}
-#     except Exception as e:
-#         logger.error(f"Hata: {e}")
-#         raise HTTPException(status_code=500, detail="Outlier detection sırasında bir hata oluştu.")
+    return FileResponse(
+        zip_file_path,
+        filename=f"{model_name}_{dataset_name}.zip",
+        media_type="application/zip"
+    )

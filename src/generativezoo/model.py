@@ -3,117 +3,145 @@ from typing import List, Optional, Literal
 from typing import List, Tuple, Optional
 class VanillaSGMRequestTrain(BaseModel):
     model_name: str
-    dataset: str = Field("mnist", description="Dataset adı")
-    batch_size: int = Field(128, description="Batch boyutu")
-    n_epochs: Optional[int] = Field(100, description="Epoch sayısı")
-    num_samples: Optional[int] = Field(16, description="Üretilecek örnek sayısı")
-    num_steps: Optional[int] = Field(500, description="Adım sayısı")
-    num_workers: int = Field(0, description="Dataloader için çalışan sayısı")
-    sigma: float = Field(25.0, description="Sigma değeri")
+    dataset: str = Field("mnist", description="Name of the dataset")
+    batch_size: int = Field(128, description="Size of the batch")
+    n_epochs: Optional[int] = Field(100, description="Number of epochs")
+    num_samples: Optional[int] = Field(16, description="Number of samples to generate")
+    num_steps: Optional[int] = Field(500, description="Number of steps")
+    num_workers: int = Field(0, description="Number of workers for the dataloader")
+    sigma: float = Field(25.0, description="Sigma value (noise level)")
     lr: float = Field(5e-4, description="Learning rate")
-    model_channels: List[int] = Field([32, 64, 128, 256], description="Model kanalları")
-    embed_dim: int = Field(256, description="Embedding boyutu")
-    sample_and_save_freq: int = Field(10, description="Sample ve save frekansı")
-    sampler_type: str = Field("PC", description="Sampler tipi", choices=["EM", "PC", "ODE"])
-    snr: float = Field(0.16, description="Signal to noise ratio")
+    model_channels: List[int] = Field([32, 64, 128, 256], description="Channels of the model")
+    embed_dim: int = Field(256, description="Embedding dimension size")
+    sample_and_save_freq: int = Field(10, description="Frequency for sampling and saving")
+    sampler_type: str = Field("PC", description="Type of the sampler", choices=["EM", "PC", "ODE"])
+    snr: float = Field(0.16, description="Signal-to-noise ratio")
     atol: float = Field(1e-6, description="Absolute tolerance")
     rtol: float = Field(1e-6, description="Relative tolerance")
-    eps: float = Field(1e-3, description="Smallest timestep for numeric stability")
+    eps: float = Field(1e-3, description="Smallest timestep for numerical stability")
+
 
 class NCSNv2RequestTrain(BaseModel):
-    model_name: str = Field(..., description="Model adı")
-    dataset: str = Field("mnist", description="Dataset adı")
-    batch_size: int = Field(128, description="Batch boyutu")
-    num_workers: int = Field(0, description="Dataloader için çalışan sayısı")
-    centered: Optional[bool]= Field(False, description="Verilerin ortalanıp ortalanmadığını belirtir") 
+    model_name: str = Field(..., description="Name of the model")
+    dataset: str = Field("mnist", description="Name of the dataset")
+    batch_size: int = Field(128, description="Batch size")
+    num_workers: int = Field(0, description="Number of workers for the dataloader")
+    centered: Optional[bool] = Field(False, description="Indicates whether the data is centered")
     normalization: Literal['InstanceNorm', 'GroupNorm', 'VarianceNorm', 'InstanceNorm++'] = Field(
         "InstanceNorm++",
-        description="Normalizasyon tipi"
+        description="Type of normalization to apply"
     )
-    nf: Optional[int] = Field(128)
-    act: str = Field("elu", description="Aktivasyon fonksiyonu adı")
-    sigma_min: Optional[float] = Field(0.01)
-    sigma_max: Optional[float] = Field(50)
-    num_scales: Optional[float] = Field(232)
-    ema_decay: Optional[float] = Field(0.999)
+    nf: Optional[int] = Field(128, description="Base number of filters")
+    act: str = Field("elu", description="Activation function name")
+    sigma_min: Optional[float] = Field(0.01, description="Minimum sigma value")
+    sigma_max: Optional[float] = Field(50, description="Maximum sigma value")
+    num_scales: Optional[float] = Field(232, description="Number of noise scales")
+    ema_decay: Optional[float] = Field(0.999, description="EMA decay rate")
     lr: Optional[float] = Field(5e-4, description="Learning rate")
-    n_epochs: Optional[int] = Field(100, description="Epoch sayısı")
-    beta1: Optional[float] = Field(0.9)
-    beta2: Optional[float] = Field(0.999)
-    weight_decay: Optional[float] = Field(0.0)
-    warmup: Optional[int] = Field(0)
-    grad_clip: Optional[float] = Field(-1.0, description="Gradient clipping değeri")
-    sample_and_save_freq: Optional[int] = Field(5, description="Sample ve save frekansı")
-    sampler: Optional[Literal['pc', 'ode']] = Field('pc', description="Sampler tipi")
-    predictor: Optional[Literal['none', 'em', 'rd', 'as']] = Field('none', description="Predictor tipi")
-    corrector: Optional[Literal['none', 'l', 'ald']] = Field('ald', description="Corrector tipi")
-    snr: Optional[float] = Field(0.176, description="Signal to Noise Ratio")
-    n_steps: Optional[int] = Field(5, description="Adım sayısı")
-    probability_flow: Optional[bool] = Field(False, description="Probability Flow")
-    noise_removal: Optional[bool] = Field(False, description="Noise Removal")
-    continuous: Optional[bool] = Field(False, description="Continuous Modu")  # Yeni eklenen alan
-    reduce_mean: Optional[bool] = Field(False, description="Reduce Mean")  # Yeni alan
-    likelihood_weighting: Optional[bool] = Field(False, description="Likelihood Weighting")  # Yeni alan
+    n_epochs: Optional[int] = Field(100, description="Number of training epochs")
+    beta1: Optional[float] = Field(0.9, description="Beta1 value for the Adam optimizer")
+    beta2: Optional[float] = Field(0.999, description="Beta2 value for the Adam optimizer")
+    weight_decay: Optional[float] = Field(0.0, description="Weight decay coefficient")
+    warmup: Optional[int] = Field(0, description="Number of warmup steps")
+    grad_clip: Optional[float] = Field(-1.0, description="Gradient clipping value")
+    sample_and_save_freq: Optional[int] = Field(5, description="Frequency of sampling and saving")
+    sampler: Optional[Literal['pc', 'ode']] = Field('pc', description="Type of sampler to use")
+    predictor: Optional[Literal['none', 'em', 'rd', 'as']] = Field('none', description="Type of predictor used during sampling")
+    corrector: Optional[Literal['none', 'l', 'ald']] = Field('ald', description="Type of corrector used during sampling")
+    snr: Optional[float] = Field(0.176, description="Signal-to-noise ratio")
+    n_steps: Optional[int] = Field(5, description="Number of sampling steps")
+    probability_flow: Optional[bool] = Field(False, description="Enable probability flow during sampling")
+    noise_removal: Optional[bool] = Field(False, description="Enable noise removal")
+    continuous: Optional[bool] = Field(False, description="Use continuous mode")
+    reduce_mean: Optional[bool] = Field(False, description="Use mean reduction")
+    likelihood_weighting: Optional[bool] = Field(False, description="Enable likelihood weighting")
+
 
 class VanillaSGMRequestSample(BaseModel):
-    model_name: str
-    num_samples: Optional[int] = Field(64)
-    dataset: str = Field("mnist", description="Dataset adı")
-    batch_size: int = Field(128, description="Batch boyutu")
-    snr: float = Field(0.16, description="Signal to noise ratio")
-    eps: float = Field(1e-3, description="Smallest timestep for numeric stability")
-    sampler_type: str = Field("PC", description="Sampler tipi", choices=["EM", "PC", "ODE"])
-    num_steps: Optional[int] = Field(500, description="Adım sayısı")
-    num_samples: Optional[int] = Field(16, description="Üretilecek örnek sayısı")
-    atol: float = Field(1e-6, description="Absolute tolerance")
-    rtol: float = Field(1e-6, description="Relative tolerance")
-    sigma: float = Field(25.0, description="Sigma değeri")
-    n_epochs: Optional[int] = Field(100, description="Epoch sayısı")
-    lr: float = Field(5e-4, description="Learning rate")
-    model_channels: List[int] = Field([32, 64, 128, 256], description="Model kanalları")
-    embed_dim: int = Field(256, description="Embedding boyutu")
-    sample_and_save_freq: int = Field(10, description="Sample ve save frekansı")
-    sampler_type: str = Field("PC", description="Sampler tipi", choices=["EM", "PC", "ODE"])
-    snr: float = Field(0.16, description="Signal to noise ratio")
-    atol: float = Field(1e-6, description="Absolute tolerance")
-    rtol: float = Field(1e-6, description="Relative tolerance")
-    eps: float = Field(1e-3, description="Smallest timestep for numeric stability")
+    model_name: str  # Name of the model to be used for sampling
+
+    num_samples: Optional[int] = Field(16, description="Number of samples to generate")
+    dataset: str = Field("mnist", description="Name of the dataset used for model context")
+    batch_size: int = Field(128, description="Batch size for the sampling process")
+
+    snr: float = Field(0.16, description="Signal-to-noise ratio used during sampling")
+    eps: float = Field(1e-3, description="Smallest time step to ensure numerical stability")
+    
+    sampler_type: str = Field(
+        "PC", 
+        description="Type of sampler to use during sample generation",
+        choices=["EM", "PC", "ODE"]
+    )
+    num_steps: Optional[int] = Field(500, description="Number of denoising steps to apply")
+    
+    atol: float = Field(1e-6, description="Absolute tolerance for the ODE/PC solver")
+    rtol: float = Field(1e-6, description="Relative tolerance for the ODE/PC solver")
+    
+    sigma: float = Field(25.0, description="Noise level for the diffusion process")
+
+    n_epochs: Optional[int] = Field(100, description="(Optional) Number of epochs if relevant to the sampler")
+    lr: float = Field(5e-4, description="Learning rate associated with training or fine-tuning before sampling")
+    
+    model_channels: List[int] = Field(
+        [32, 64, 128, 256], 
+        description="List defining the number of channels at each layer of the model"
+    )
+    embed_dim: int = Field(256, description="Dimension of the embedding vectors used in the model")
+
+    sample_and_save_freq: int = Field(
+        10, 
+        description="Frequency (in steps) at which samples are generated and saved"
+    )
+
 
 class NCSNv2RequestSample(BaseModel):
-    model_name: str = Field(..., description="Model adı")
-    dataset: str = Field("mnist", description="Dataset adı")
-    batch_size: int = Field(128, description="Batch boyutu")
-    num_workers: int = Field(0, description="Dataloader için çalışan sayısı")
-    centered: Optional[bool]= Field(False, description="Verilerin ortalanıp ortalanmadığını belirtir") 
+    model_name: str = Field(..., description="Name of the model to use for sampling")
+    dataset: str = Field("mnist", description="Name of the dataset")
+    batch_size: int = Field(128, description="Batch size used during sampling")
+    num_workers: int = Field(0, description="Number of workers used by the DataLoader")
+
+    centered: Optional[bool] = Field(False, description="Indicates whether the input data is centered")
+    
     normalization: Literal['InstanceNorm', 'GroupNorm', 'VarianceNorm', 'InstanceNorm++'] = Field(
         "InstanceNorm++",
-        description="Normalizasyon tipi"
+        description="Type of normalization applied to the data"
     )
-    nf: Optional[int] = Field(128)
-    act: str = Field("elu", description="Aktivasyon fonksiyonu adı")
-    sigma_min: Optional[float] = Field(0.01)
-    sigma_max: Optional[float] = Field(50)
-    num_scales: Optional[float] = Field(232)
-    ema_decay: Optional[float] = Field(0.999)
+
+    nf: Optional[int] = Field(128, description="Base number of filters for the model")
+    act: str = Field("elu", description="Activation function used in the network")
+    
+    sigma_min: Optional[float] = Field(0.01, description="Minimum sigma value for diffusion process")
+    sigma_max: Optional[float] = Field(50, description="Maximum sigma value for diffusion process")
+    num_scales: Optional[float] = Field(232, description="Number of scales used for noise levels")
+    
+    ema_decay: Optional[float] = Field(0.999, description="Exponential Moving Average decay rate")
     lr: Optional[float] = Field(5e-4, description="Learning rate")
-    n_epochs: Optional[int] = Field(100, description="Epoch sayısı")
-    beta1: Optional[float] = Field(0.9)
-    beta2: Optional[float] = Field(0.999)
-    weight_decay: Optional[float] = Field(0.0)
-    warmup: Optional[int] = Field(0)
-    grad_clip: Optional[float] = Field(-1.0, description="Gradient clipping değeri")
-    sample_and_save_freq: Optional[int] = Field(5, description="Sample ve save frekansı")
-    sampler: Optional[Literal['pc', 'ode']] = Field('pc', description="Sampler tipi")
-    predictor: Optional[Literal['none', 'em', 'rd', 'as']] = Field('none', description="Predictor tipi")
-    corrector: Optional[Literal['none', 'l', 'ald']] = Field('ald', description="Corrector tipi")
-    snr: Optional[float] = Field(0.176, description="Signal to Noise Ratio")
-    n_steps: Optional[int] = Field(5, description="Adım sayısı")
-    probability_flow: Optional[bool] = Field(False, description="Probability Flow")
-    noise_removal: Optional[bool] = Field(False, description="Noise Removal")
-    continuous: Optional[bool] = Field(False, description="Continuous Modu")  # Yeni eklenen alan
-    reduce_mean: Optional[bool] = Field(False, description="Reduce Mean")  # Yeni alan
-    likelihood_weighting: Optional[bool] = Field(False, description="Likelihood Weighting")  # Yeni alan
-    num_samples: Optional[int] = Field(16, description="Üretilecek örnek sayısı")
+    n_epochs: Optional[int] = Field(100, description="Number of epochs (if applicable)")
+    
+    beta1: Optional[float] = Field(0.9, description="Beta1 parameter for the Adam optimizer")
+    beta2: Optional[float] = Field(0.999, description="Beta2 parameter for the Adam optimizer")
+    weight_decay: Optional[float] = Field(0.0, description="Weight decay (L2 regularization)")
+    warmup: Optional[int] = Field(0, description="Number of warm-up steps for the optimizer")
+    
+    grad_clip: Optional[float] = Field(-1.0, description="Value for gradient clipping to prevent exploding gradients")
+
+    sample_and_save_freq: Optional[int] = Field(5, description="How often to sample and save images (in steps)")
+    
+    sampler: Optional[Literal['pc', 'ode']] = Field('pc', description="Sampling algorithm type (predictor-corrector or ODE-based)")
+    predictor: Optional[Literal['none', 'em', 'rd', 'as']] = Field('none', description="Predictor type used during sampling")
+    corrector: Optional[Literal['none', 'l', 'ald']] = Field('ald', description="Corrector type used during sampling")
+    
+    snr: Optional[float] = Field(0.176, description="Signal-to-noise ratio for the sampling process")
+    n_steps: Optional[int] = Field(5, description="Number of sampling steps")
+    
+    probability_flow: Optional[bool] = Field(False, description="Whether to use probability flow-based sampling")
+    noise_removal: Optional[bool] = Field(False, description="Whether to perform noise removal in final outputs")
+    
+    continuous: Optional[bool] = Field(False, description="Enable continuous mode for sampling")
+    reduce_mean: Optional[bool] = Field(False, description="Whether to apply reduce mean operation on loss/outputs")
+    likelihood_weighting: Optional[bool] = Field(False, description="Enable likelihood weighting in training/sampling")
+
+    num_samples: Optional[int] = Field(16, description="Number of samples to generate")
 
 class VanillaVAERequestTrain(BaseModel):
     model_name: str
