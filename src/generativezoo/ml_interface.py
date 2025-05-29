@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 if __name__ == "__main__":
     from simian.local import Uiformio
+
     Uiformio("ml_interface", window_title="GenerativeZoo Models Interface")
 
 # API Endpoints
@@ -75,13 +76,14 @@ def create_parameter_input(param_name: str, param_config: dict, parent_container
     else:
         input_comp = component.TextInput(param_name, parent_container)
         input_comp.defaultValue = param_config["default"]
-    
+
     input_comp.label = param_config["label"]
     input_comp.tooltip = param_config.get("tooltip", f"Set the {param_config['label']}")
     return input_comp
 
+
 def gui_init(meta_data: dict) -> dict:
-    global form, current_model
+    global current_model
     form = Form()
 
     # Create a container for better layout
@@ -111,9 +113,8 @@ def gui_init(meta_data: dict) -> dict:
     model_select.valueProperty = "value"
     model_select.defaultValue = current_model
     model_select.tooltip = "Choose the generative model architecture to train"
-    model_select.event = "model_changed"
-    model_select.action = "event"
-    model_select.required = True
+    model_select.setRequired()
+    model_select.properties = {"triggerHappy": "model_changed"}
 
     dataset_select = component.Select("dataset", training_panel)
     dataset_select.label = "Training Dataset"
@@ -138,19 +139,19 @@ def gui_init(meta_data: dict) -> dict:
     epochs_input.label = "Number of Epochs"
     epochs_input.defaultValue = 100
     epochs_input.tooltip = "Set the number of training epochs"
-    epochs_input.step = 1
+    epochs_input.add_validation(integer=True)
 
     batch_size_input = component.Number("batch_size", common_panel)
     batch_size_input.label = "Batch Size"
     batch_size_input.defaultValue = 256
     batch_size_input.tooltip = "Set the batch size for training"
-    batch_size_input.step = 1
+    batch_size_input.add_validation(integer=True)
 
     lr_input = component.Number("lr", common_panel)
     lr_input.label = "Learning Rate"
     lr_input.defaultValue = 0.001
     lr_input.tooltip = "Set the learning rate for training"
-    lr_input.step = 0.0001
+    lr_input.add_validation(step=0.0001)
 
     # Training Button
     train_button = component.Button("train_model", training_panel)
@@ -162,11 +163,10 @@ def gui_init(meta_data: dict) -> dict:
     train_button.tooltip = "Start training the model with the selected configuration"
 
     # Training Status
-    train_status = component.HtmlElement("training_status", training_panel)
+    train_status = component.Html("training_status", training_panel)
     train_status.tag = "div"
-    train_status.addCustomClass("alert alert-info mt-3")
-    train_status.content = """
-        <div class="d-flex align-items-center">
+    train_status.defaultValue = """
+        <div class="d-flex align-items-center alert alert-info mt-3">
             <i class="fas fa-info-circle me-2"></i>
             <span>Training Status: Not Started</span>
         </div>
@@ -179,11 +179,10 @@ def gui_init(meta_data: dict) -> dict:
     download_panel.theme = "info"
 
     # Download Status
-    download_status = component.HtmlElement("download_status", download_panel)
+    download_status = component.Html("download_status", download_panel)
     download_status.tag = "div"
-    download_status.addCustomClass("alert alert-info mb-3")
-    download_status.content = """
-        <div class="d-flex align-items-center">
+    download_status.defaultValue = """
+        <div class="d-flex align-items-center alert alert-info mb-3">
             <i class="fas fa-info-circle me-2"></i>
             <span>Select a model and dataset to download</span>
         </div>
@@ -218,11 +217,10 @@ def gui_init(meta_data: dict) -> dict:
     sample_button.size = "lg"
 
     # Sampling Status
-    sample_status = component.HtmlElement("sample_status", sampling_panel)
+    sample_status = component.Html("sample_status", sampling_panel)
     sample_status.tag = "div"
-    sample_status.addCustomClass("alert alert-info mt-3")
-    sample_status.content = """
-        <div class="d-flex align-items-center">
+    sample_status.defaultValue = """
+        <div class="d-flex align-items-center alert alert-info mt-3">
             <i class="fas fa-info-circle me-2"></i>
             <span>Sampling Status: Not Started</span>
         </div>
@@ -249,14 +247,15 @@ def gui_init(meta_data: dict) -> dict:
         "showChanged": True
     }
 
+
 def model_changed(meta_data: dict, payload: dict) -> dict:
     """Handle model selection change event"""
-    global form, current_model, model_trained
-    
+    global current_model, model_trained
+
     # Get the new model selection and update current model
     new_model, _ = utils.getSubmissionData(payload, "model_name")
     logger.info(f"Model changed from {current_model} to {new_model}")
-    
+
     if new_model:
         current_model = new_model
         model_trained = False  # Reset model_trained when model changes
@@ -264,38 +263,35 @@ def model_changed(meta_data: dict, payload: dict) -> dict:
     else:
         logger.error("No model selected in payload")
         return payload
-    
+
     # Clear any existing training status
-    if "training_status" in form.components:
-        form.components["training_status"].content = """
-            <div class="d-flex align-items-center">
-                <i class="fas fa-info-circle me-2"></i>
-                <span>Training Status: Not Started</span>
-            </div>
-        """
-        form.components["training_status"].addCustomClass("alert alert-info")
-        form.components["training_status"].removeCustomClass("alert-success alert-warning alert-danger")
-    
+    training_status = """
+        <div class="d-flex align-items-center alert alert-info">
+            <i class="fas fa-info-circle me-2"></i>
+            <span>Training Status: Not Started</span>
+        </div>
+    """
+    utils.setSubmissionData(payload, "training_status", training_status)
+
     # Reset sample status and image
-    if "sample_status" in form.components:
-        form.components["sample_status"].content = """
-            <div class="d-flex align-items-center">
-                <i class="fas fa-info-circle me-2"></i>
-                <span>Sampling Status: Not Started</span>
-            </div>
-        """
-        form.components["sample_status"].addCustomClass("alert alert-info")
-        form.components["sample_status"].removeCustomClass("alert-success alert-warning alert-danger")
-    
-    if "sample_image" in form.components:
-        form.components["sample_image"].defaultValue = """
-            <div class="text-center p-4 bg-light rounded">
-                <i class="fas fa-image fa-3x text-muted mb-3"></i>
-                <p class="text-muted">Generated images will appear here</p>
-            </div>
-        """
-    
+    sample_status = """
+        <div class="d-flex align-items-center alert alert-info">
+            <i class="fas fa-info-circle me-2"></i>
+            <span>Sampling Status: Not Started</span>
+        </div>
+    """
+    utils.setSubmissionData(payload, "sample_status", sample_status)
+
+    sample_image = """
+        <div class="text-center p-4 bg-light rounded">
+            <i class="fas fa-image fa-3x text-muted mb-3"></i>
+            <p class="text-muted">Generated images will appear here</p>
+        </div>
+    """
+    utils.setSubmissionData(payload, "sample_image", sample_image)
+
     return payload
+
 
 def gui_event(meta_data: dict, payload: dict) -> dict:
     Form.eventHandler(train_model=train_model)
@@ -306,24 +302,25 @@ def gui_event(meta_data: dict, payload: dict) -> dict:
     callback = utils.getEventFunction(meta_data, payload)
     return callback(meta_data, payload)
 
+
 # 📌 Model eğitme fonksiyonu
 def train_model(meta_data: dict, payload: dict) -> dict:
-    global current_model, form, model_trained
-    
+    global current_model, model_trained
+
     # Get the current model from payload
     selected_model, _ = utils.getSubmissionData(payload, "model_name")
     if selected_model:
         if selected_model != current_model:
             logger.warning(f"Model mismatch: selected={selected_model}, current={current_model}")
             current_model = selected_model
-    
+
     logger.info(f"Training model: {current_model}")
-    
+
     # Get model configuration
     model_params = MODEL_PARAMS.get(current_model)
     if not model_params:
         error_html = f"""
-            <div class="d-flex align-items-center">
+            <div class="d-flex align-items-center alert alert-danger">
                 <i class="fas fa-exclamation-triangle me-2 text-warning"></i>
                 <span>Model configuration not found for {current_model}</span>
             </div>
@@ -336,8 +333,8 @@ def train_model(meta_data: dict, payload: dict) -> dict:
     # Initialize data dictionary with common parameters
     dataset_value, _ = utils.getSubmissionData(payload, "dataset")
     if not dataset_value:
-        error_html = f"""
-            <div class="d-flex align-items-center">
+        error_html = """
+            <div class="d-flex align-items-center alert alert-danger">
                 <i class="fas fa-exclamation-triangle me-2 text-warning"></i>
                 <span>Please select a dataset</span>
             </div>
@@ -359,7 +356,7 @@ def train_model(meta_data: dict, payload: dict) -> dict:
         if value is None:
             missing_params.append(param)
             continue
-        
+
         try:
             if param in ["n_epochs", "batch_size"]:
                 data[param] = int(value)
@@ -367,7 +364,7 @@ def train_model(meta_data: dict, payload: dict) -> dict:
                 data[param] = float(value)
         except (ValueError, TypeError):
             error_html = f"""
-                <div class="d-flex align-items-center">
+                <div class="d-flex align-items-center alert alert-danger">
                     <i class="fas fa-exclamation-triangle me-2 text-warning"></i>
                     <span>Invalid value for {param}</span>
                 </div>
@@ -380,7 +377,7 @@ def train_model(meta_data: dict, payload: dict) -> dict:
     # Check for missing parameters
     if missing_params:
         error_html = f"""
-            <div class="d-flex align-items-center">
+            <div class="d-flex align-items-center alert alert-danger">
                 <i class="fas fa-exclamation-triangle me-2 text-warning"></i>
                 <span>Please fill in the following parameters: {', '.join(missing_params)}</span>
             </div>
@@ -411,68 +408,57 @@ def train_model(meta_data: dict, payload: dict) -> dict:
     try:
         res = requests.post(api_url, json=data)
         logger.info(f"Training API response status: {res.status_code}")
-        
+
         if res.status_code == 200:
             message = res.json().get("message", "Model trained successfully!")
             model_trained = True
             logger.info("Model training successful")
-            status_html = f"""
-                <div class="d-flex align-items-center">
+            status_html = """
+                <div class="d-flex align-items-center alert alert-success">
                     <i class="fas fa-check-circle me-2 text-success"></i>
                     <span>Training Status: Model Successfully Trained! 🎉</span>
                 </div>
             """
             utils.setSubmissionData(payload, "training_status", status_html)
-            if "training_status" in form.components:
-                form.components["training_status"].addCustomClass("alert alert-success")
-                form.components["training_status"].removeCustomClass("alert-info alert-warning alert-danger")
         else:
             message = f"API Error: {res.status_code} - {res.text}"
             model_trained = False
             logger.error(f"Training API error: {message}")
             status_html = f"""
-                <div class="d-flex align-items-center">
+                <div class="d-flex align-items-center alert alert-danger">
                     <i class="fas fa-exclamation-circle me-2 text-danger"></i>
                     <span>Training Status: Failed - {message}</span>
                 </div>
             """
             utils.setSubmissionData(payload, "training_status", status_html)
-            if "training_status" in form.components:
-                form.components["training_status"].addCustomClass("alert alert-danger")
-                form.components["training_status"].removeCustomClass("alert-info alert-warning alert-success")
 
     except Exception as e:
         error_html = f"""
-            <div class="d-flex align-items-center">
+            <div class="d-flex align-items-center alert alert-warning">
                 <i class="fas fa-exclamation-triangle me-2 text-warning"></i>
                 <span>Training Status: Error - {str(e)}</span>
             </div>
         """
         utils.setSubmissionData(payload, "training_status", error_html)
-        if "training_status" in form.components:
-            form.components["training_status"].addCustomClass("alert alert-warning")
-            form.components["training_status"].removeCustomClass("alert-info alert-success alert-danger")
         model_trained = False
         logger.error(f"Exception during training: {str(e)}", exc_info=True)
 
     return payload
 
+
 def sample_model(meta_data: dict, payload: dict) -> dict:
-    global model_trained, form
+    global model_trained
 
     logger.info(f"Sample model called. Model trained: {model_trained}")
 
     if not model_trained:
         status_html = """
-            <div class="d-flex align-items-center">
+            <div class="d-flex align-items-center alert alert-danger">
                 <i class="fas fa-exclamation-circle me-2 text-danger"></i>
                 <span>Please train the model first!</span>
             </div>
         """
         utils.setSubmissionData(payload, "sample_status", status_html)
-        if "sample_status" in form.components:
-            form.components["sample_status"].addCustomClass("alert alert-danger")
-            form.components["sample_status"].removeCustomClass("alert-info alert-warning alert-success")
         return payload
 
     # Get model name and dataset
@@ -507,34 +493,28 @@ def sample_model(meta_data: dict, payload: dict) -> dict:
 
     if api_url is None:
         error_html = f"""
-            <div class="d-flex align-items-center">
+            <div class="d-flex align-items-center alert alert-danger">
                 <i class="fas fa-exclamation-circle me-2 text-danger"></i>
                 <span>No sampling endpoint available for model: {model_name}</span>
             </div>
         """
         utils.setSubmissionData(payload, "sample_status", error_html)
-        if "sample_status" in form.components:
-            form.components["sample_status"].addCustomClass("alert alert-danger")
-            form.components["sample_status"].removeCustomClass("alert-info alert-warning alert-success")
         return payload
 
     try:
         # Update status to "Generating..."
         generating_html = """
-            <div class="d-flex align-items-center">
+            <div class="d-flex align-items-center alert alert-info">
                 <i class="fas fa-spinner fa-spin me-2"></i>
                 <span>Generating samples...</span>
             </div>
         """
         utils.setSubmissionData(payload, "sample_status", generating_html)
-        if "sample_status" in form.components:
-            form.components["sample_status"].addCustomClass("alert alert-info")
-            form.components["sample_status"].removeCustomClass("alert-success alert-warning alert-danger")
 
         logger.info(f"Sending request to {api_url} with data: {data}")
         res = requests.post(api_url, json=data)
         logger.info(f"Received response with status code: {res.status_code}")
-        
+
         try:
             response_json = res.json()
             logger.info(f"Response JSON: {response_json}")
@@ -545,7 +525,7 @@ def sample_model(meta_data: dict, payload: dict) -> dict:
 
         if res.status_code == 200 and "base64_image" in response_json:
             base64_image = response_json["base64_image"]
-            
+
             # Handle if response is a list
             if isinstance(base64_image, list):
                 base64_image = base64_image[0]
@@ -555,7 +535,7 @@ def sample_model(meta_data: dict, payload: dict) -> dict:
             if "data:image" in base64_image:
                 base64_image = base64_image.split(',')[1]
                 logger.info("Removed data URL prefix from base64 image")
-            
+
             # Create the full data URL
             img_url = f"data:image/png;base64,{base64_image}"
 
@@ -570,52 +550,42 @@ def sample_model(meta_data: dict, payload: dict) -> dict:
             """
 
             utils.setSubmissionData(payload, "sample_image", img_html)
-            
+
             # Update status to success
             success_html = """
-                <div class="d-flex align-items-center">
+                <div class="d-flex align-items-center alert alert-success">
                     <i class="fas fa-check-circle me-2 text-success"></i>
                     <span>Samples generated successfully!</span>
                 </div>
             """
             utils.setSubmissionData(payload, "sample_status", success_html)
-            if "sample_status" in form.components:
-                form.components["sample_status"].addCustomClass("alert alert-success")
-                form.components["sample_status"].removeCustomClass("alert-info alert-warning alert-danger")
 
         else:
             error_message = response_json.get('message', 'Unknown error')
             logger.error(f"API Error: {error_message}")
             error_html = f"""
-                <div class="d-flex align-items-center">
+                <div class="d-flex align-items-center alert alert-danger">
                     <i class="fas fa-exclamation-circle me-2 text-danger"></i>
                     <span>API Error: {error_message}</span>
                 </div>
             """
             utils.setSubmissionData(payload, "sample_status", error_html)
-            if "sample_status" in form.components:
-                form.components["sample_status"].addCustomClass("alert alert-danger")
-                form.components["sample_status"].removeCustomClass("alert-info alert-warning alert-success")
 
     except Exception as e:
         logger.error(f"Exception during sampling: {str(e)}", exc_info=True)
         error_html = f"""
-            <div class="d-flex align-items-center">
+            <div class="d-flex align-items-center alert alert-warning">
                 <i class="fas fa-exclamation-triangle me-2 text-warning"></i>
                 <span>Error: {str(e)}</span>
             </div>
         """
         utils.setSubmissionData(payload, "sample_status", error_html)
-        if "sample_status" in form.components:
-            form.components["sample_status"].addCustomClass("alert alert-warning")
-            form.components["sample_status"].removeCustomClass("alert-info alert-success alert-danger")
 
     return payload
 
+
 def download_model(meta_data: dict, payload: dict) -> dict:
     """Handle model download request"""
-    global form
-
     # Get model name
     model_name, _ = utils.getSubmissionData(payload, "model_name")
 
@@ -623,49 +593,40 @@ def download_model(meta_data: dict, payload: dict) -> dict:
 
     if not model_name:
         error_html = """
-            <div class="d-flex align-items-center">
+            <div class="d-flex align-items-center alert alert-danger">
                 <i class="fas fa-exclamation-circle me-2 text-danger"></i>
                 <span>Please select a model to download</span>
             </div>
         """
         utils.setSubmissionData(payload, "download_status", error_html)
-        if "download_status" in form.components:
-            form.components["download_status"].addCustomClass("alert alert-danger")
-            form.components["download_status"].removeCustomClass("alert-info alert-warning alert-success")
         return payload
 
     # Get dataset name
     dataset, _ = utils.getSubmissionData(payload, "dataset")
     if not dataset:
         error_html = """
-            <div class="d-flex align-items-center">
+            <div class="d-flex align-items-center alert alert-danger">
                 <i class="fas fa-exclamation-circle me-2 text-danger"></i>
                 <span>Please select a dataset</span>
             </div>
         """
         utils.setSubmissionData(payload, "download_status", error_html)
-        if "download_status" in form.components:
-            form.components["download_status"].addCustomClass("alert alert-danger")
-            form.components["download_status"].removeCustomClass("alert-info alert-warning alert-success")
         return payload
 
     try:
         # Update status to "Checking..."
         checking_html = """
-            <div class="d-flex align-items-center">
+            <div class="d-flex align-items-center alert alert-info">
                 <i class="fas fa-spinner fa-spin me-2"></i>
                 <span>Checking model availability...</span>
             </div>
         """
         utils.setSubmissionData(payload, "download_status", checking_html)
-        if "download_status" in form.components:
-            form.components["download_status"].addCustomClass("alert alert-info")
-            form.components["download_status"].removeCustomClass("alert-success alert-warning alert-danger")
 
         # Test if the model exists and can be downloaded
         test_response = requests.post(DOWNLOAD_MODEL_URL, json={"Model": model_name, "Dataset": dataset}, stream=True)
         logger.info(f"Download test response status: {test_response.status_code}")
-        
+
         if test_response.status_code == 200:
             # Check if we received a ZIP file
             content_type = test_response.headers.get('content-type', '')
@@ -674,7 +635,7 @@ def download_model(meta_data: dict, payload: dict) -> dict:
             if 'application/zip' in content_type or '.zip' in content_disp:
                 # Create download form with success message and download location info
                 download_html = f"""
-                    <div class="d-flex flex-column">
+                    <div class="d-flex flex-column alert alert-success">
                         <div class="d-flex align-items-center justify-content-between mb-2">
                             <div>
                                 <i class="fas fa-check-circle me-2 text-success"></i>
@@ -722,49 +683,34 @@ def download_model(meta_data: dict, payload: dict) -> dict:
                     </script>
                 """
                 utils.setSubmissionData(payload, "download_status", download_html)
-                if "download_status" in form.components:
-                    form.components["download_status"].addCustomClass("alert alert-success")
-                    form.components["download_status"].removeCustomClass("alert-info alert-warning alert-danger")
             else:
                 logger.error(f"Unexpected content type: {content_type}")
                 error_html = """
-                    <div class="d-flex align-items-center">
+                    <div class="d-flex align-items-center alert alert-danger">
                         <i class="fas fa-exclamation-circle me-2 text-danger"></i>
                         <span>Error: Server did not return a valid model file</span>
                     </div>
                 """
                 utils.setSubmissionData(payload, "download_status", error_html)
-                if "download_status" in form.components:
-                    form.components["download_status"].addCustomClass("alert alert-danger")
-                    form.components["download_status"].removeCustomClass("alert-info alert-warning alert-success")
         else:
             error_message = test_response.json().get('detail', 'Unknown error')
             logger.error(f"Download API error: {error_message}")
             error_html = f"""
-                <div class="d-flex align-items-center">
+                <div class="d-flex align-items-center alert alert-danger">
                     <i class="fas fa-exclamation-circle me-2 text-danger"></i>
                     <span>Download Error: {error_message}</span>
                 </div>
             """
             utils.setSubmissionData(payload, "download_status", error_html)
-            if "download_status" in form.components:
-                form.components["download_status"].addCustomClass("alert alert-danger")
-                form.components["download_status"].removeCustomClass("alert-info alert-warning alert-success")
 
     except Exception as e:
         logger.error(f"Exception during download check: {str(e)}", exc_info=True)
         error_html = f"""
-            <div class="d-flex align-items-center">
+            <div class="d-flex align-items-center alert alert-warning">
                 <i class="fas fa-exclamation-triangle me-2 text-warning"></i>
                 <span>Error checking model: {str(e)}</span>
             </div>
         """
         utils.setSubmissionData(payload, "download_status", error_html)
-        if "download_status" in form.components:
-            form.components["download_status"].addCustomClass("alert alert-warning")
-            form.components["download_status"].removeCustomClass("alert-info alert-success alert-danger")
 
     return payload
-
-
-
