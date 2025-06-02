@@ -4,8 +4,7 @@ from simian.gui import Form, component, utils
 import logging
 import base64
 
-# Add form and current model as global variables at the top
-form = None
+# Add current model and model trained flag default values at the top
 current_model = "Vanilla VAE"
 model_trained = False  # Initialize model_trained as False
 
@@ -83,7 +82,6 @@ def create_parameter_input(param_name: str, param_config: dict, parent_container
 
 
 def gui_init(meta_data: dict) -> dict:
-    global current_model
     form = Form()
 
     # Create a container for better layout
@@ -115,6 +113,13 @@ def gui_init(meta_data: dict) -> dict:
     model_select.tooltip = "Choose the generative model architecture to train"
     model_select.setRequired()
     model_select.properties = {"triggerHappy": "model_changed"}
+
+    # Add storage fields in the payload for the current model and trained status.
+    current_model_store = component.Hidden("current_model", training_panel)
+    current_model_store.defaultValue = current_model
+
+    model_trained_store = component.Hidden("model_trained", training_panel)
+    model_trained_store.defaultValue = model_trained
 
     dataset_select = component.Select("dataset", training_panel)
     dataset_select.label = "Training Dataset"
@@ -250,15 +255,15 @@ def gui_init(meta_data: dict) -> dict:
 
 def model_changed(meta_data: dict, payload: dict) -> dict:
     """Handle model selection change event"""
-    global current_model, model_trained
-
     # Get the new model selection and update current model
+    current_model, _ = utils.getSubmissionData(payload, "current_model")
     new_model, _ = utils.getSubmissionData(payload, "model_name")
     logger.info(f"Model changed from {current_model} to {new_model}")
 
     if new_model:
         current_model = new_model
-        model_trained = False  # Reset model_trained when model changes
+        utils.setSubmissionData(payload, "current_model", current_model)
+        utils.setSubmissionData(payload, "model_trained", False)  # Reset model_trained when model changes
         logger.info(f"Current model updated to: {current_model}")
     else:
         logger.error("No model selected in payload")
@@ -294,10 +299,12 @@ def model_changed(meta_data: dict, payload: dict) -> dict:
 
 
 def gui_event(meta_data: dict, payload: dict) -> dict:
-    Form.eventHandler(train_model=train_model)
-    Form.eventHandler(sample_model=sample_model)
-    Form.eventHandler(model_changed=model_changed)
-    Form.eventHandler(download_model=download_model)
+    Form.eventHandler(
+        train_model=train_model,
+        sample_model=sample_model,
+        model_changed=model_changed,
+        download_model=download_model,
+    )
 
     callback = utils.getEventFunction(meta_data, payload)
     return callback(meta_data, payload)
@@ -305,14 +312,15 @@ def gui_event(meta_data: dict, payload: dict) -> dict:
 
 # 📌 Model eğitme fonksiyonu
 def train_model(meta_data: dict, payload: dict) -> dict:
-    global current_model, model_trained
-
     # Get the current model from payload
+    current_model, _ = utils.getSubmissionData(payload, "current_model")
     selected_model, _ = utils.getSubmissionData(payload, "model_name")
+
     if selected_model:
         if selected_model != current_model:
             logger.warning(f"Model mismatch: selected={selected_model}, current={current_model}")
             current_model = selected_model
+            utils.setSubmissionData(payload, "current_model", current_model)
 
     logger.info(f"Training model: {current_model}")
 
@@ -326,7 +334,7 @@ def train_model(meta_data: dict, payload: dict) -> dict:
             </div>
         """
         utils.setSubmissionData(payload, "training_status", error_html)
-        model_trained = False
+        utils.setSubmissionData(payload, "model_trained", False)
         logger.error(f"Model configuration not found for {current_model}")
         return payload
 
@@ -340,7 +348,7 @@ def train_model(meta_data: dict, payload: dict) -> dict:
             </div>
         """
         utils.setSubmissionData(payload, "training_status", error_html)
-        model_trained = False
+        utils.setSubmissionData(payload, "model_trained", False)
         logger.error("Dataset not selected")
         return payload
 
@@ -370,7 +378,7 @@ def train_model(meta_data: dict, payload: dict) -> dict:
                 </div>
             """
             utils.setSubmissionData(payload, "training_status", error_html)
-            model_trained = False
+            utils.setSubmissionData(payload, "model_trained", False)
             logger.error(f"Invalid value for parameter: {param}")
             return payload
 
@@ -383,7 +391,7 @@ def train_model(meta_data: dict, payload: dict) -> dict:
             </div>
         """
         utils.setSubmissionData(payload, "training_status", error_html)
-        model_trained = False
+        utils.setSubmissionData(payload, "model_trained", False)
         logger.error(f"Missing parameters: {missing_params}")
         return payload
 
@@ -443,12 +451,12 @@ def train_model(meta_data: dict, payload: dict) -> dict:
         model_trained = False
         logger.error(f"Exception during training: {str(e)}", exc_info=True)
 
+    utils.setSubmissionData(payload, "model_trained", model_trained)
     return payload
 
 
 def sample_model(meta_data: dict, payload: dict) -> dict:
-    global model_trained
-
+    model_trained, _ = utils.getSubmissionData(payload, "model_trained")
     logger.info(f"Sample model called. Model trained: {model_trained}")
 
     if not model_trained:
